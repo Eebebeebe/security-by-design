@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Admin · Pizzeria Sicher</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="/admin.js" defer></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">🍕 Pizzeria <strong>Sicher</strong> · Admin</div>
+      <nav>
+        <a href="/">Zum Shop</a>
+        <span id="who" class="muted"></span>
+        <button id="logout" class="link" hidden>Abmelden</button>
+      </nav>
+    </header>
+
+    <main class="admin">
+      <section id="login-view" class="login" hidden>
+        <h1>Anmeldung</h1>
+        <form id="login-form" class="form" novalidate>
+          <label
+            >Benutzername <input name="username" required maxlength="40" autocomplete="username"
+          /></label>
+          <label
+            >Passwort
+            <input
+              name="password"
+              type="password"
+              required
+              maxlength="200"
+              autocomplete="current-password"
+          /></label>
+          <button type="submit" class="primary">Anmelden</button>
+          <p id="login-msg" class="msg" role="status"></p>
+        </form>
+      </section>
+
+      <section id="admin-view" hidden>
+        <div class="tabs" role="tablist">
+          <button class="tab active" data-tab="products" role="tab">Sortiment &amp; Bestand</button>
+          <button class="tab" data-tab="orders" role="tab">Bestellungen</button>
+        </div>
+        <p id="admin-msg" class="msg" role="status"></p>
+
+        <div id="tab-products">
+          <table class="table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Name</th>
+                <th>Kategorie</th>
+                <th>Preis</th>
+                <th>Bestand</th>
+                <th>Im Sortiment</th>
+                <th>Bestand ändern</th>
+              </tr>
+            </thead>
+            <tbody id="product-rows"></tbody>
+          </table>
+
+          <details class="new-product">
+            <summary>Neues Produkt anlegen</summary>
+            <form id="new-product" class="form grid-form" novalidate>
+              <label>Name <input name="name" required minlength="2" maxlength="80" /></label>
+              <label>Beschreibung <input name="description" maxlength="500" /></label>
+              <label
+                >Kategorie
+                <select name="category">
+                  <option value="pizza">Pizza</option>
+                  <option value="drink">Getränk</option>
+                  <option value="dessert">Dessert</option>
+                </select>
+              </label>
+              <label
+                >Preis (€)
+                <input name="price" required type="number" min="0.01" max="1000" step="0.01"
+              /></label>
+              <label
+                >Bestand
+                <input name="stock" required type="number" min="0" max="100000" step="1" value="0"
+              /></label>
+              <button type="submit" class="primary">Anlegen</button>
+            </form>
+          </details>
+        </div>
+
+        <div id="tab-orders" hidden>
+          <label class="inline-label"
+            >Filter
+            <select id="order-filter">
+              <option value="">alle</option>
+              <option value="received">Eingegangen</option>
+              <option value="baking">Im Ofen</option>
+              <option value="delivering">Unterwegs</option>
+              <option value="delivered">Geliefert</option>
+              <option value="cancelled">Storniert</option>
+            </select>
+          </label>
+          <table class="table">
+            <thead>
+              <tr>
+                <th>Zeit</th>
+                <th>Kunde</th>
+                <th>Adresse</th>
+                <th>Positionen</th>
+                <th>Summe</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="order-rows"></tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

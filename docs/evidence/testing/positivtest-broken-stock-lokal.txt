@@ -1,0 +1,15 @@
+Positivtest: Anwendungstests scheitern bei fehlerhafter Änderung (lokal reproduziert, 2026-11-22)
+
+Änderung (identisch zu Branch demo/broken-stock, erzeugt durch scripts/create-demo-branches.mjs):
+  src/services/orderService.ts
+  - 'UPDATE products SET stock = stock - $2, updated_at = now() WHERE id = $1'
+  + 'UPDATE products SET updated_at = now() WHERE id = $1 AND $2::int > 0'
+
+$ npx vitest run tests/integration/shop.test.ts
+     × legt Bestellung an, rechnet mit DB-Preisen und reduziert den Bestand
+     × parallele Bestellungen verkaufen nie mehr als vorhanden
+ FAIL  tests/integration/shop.test.ts > Bestellung > legt Bestellung an, rechnet mit DB-Preisen und reduziert den Bestand
+ FAIL  tests/integration/shop.test.ts > Bestellung > parallele Bestellungen verkaufen nie mehr als vorhanden
+      Tests  2 failed | 9 passed (11)
+
+Im CI: siehe roten Lauf des Branches demo/broken-stock (Actions -> CI -> "Anwendungstests (Postgres)").

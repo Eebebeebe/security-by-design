@@ -1,0 +1,13 @@
+# Lokale Schutzschicht VOR dem Commit (ergänzt die CI, ersetzt sie nicht).
+# 1) Secret Scanning der gestagten Änderungen – ein Secret, das nie committet wird, muss nie rotiert werden.
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks git --staged --redact --config .gitleaks.toml || {
+    echo "gitleaks: mögliches Secret gefunden – Commit abgebrochen." >&2
+    exit 1
+  }
+else
+  echo "Hinweis: gitleaks nicht installiert – Secret-Scan läuft nur in der CI (https://github.com/gitleaks/gitleaks)." >&2
+fi
+# 2) Schnelle statische Checks
+npm run --silent lint
+npm run --silent typecheck

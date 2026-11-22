@@ -1,0 +1,71 @@
+# Projektspezifische SAST-Regeln (ergänzen die Semgrep-Registry-Regeln).
+# Sie kodieren die Sicherheitsregeln dieses Projekts, damit Verstöße automatisch auffallen.
+rules:
+  - id: pizza-sql-string-concat
+    message: >-
+      SQL-Query wird per String-Verkettung gebaut -> SQL-Injection-Gefahr.
+      Werte immer als Parameter ($1, $2, ...) übergeben.
+    severity: ERROR
+    languages: [typescript, javascript]
+    metadata:
+      cwe: 'CWE-89: SQL Injection'
+      owasp: 'A03:2021 - Injection'
+    pattern-either:
+      - pattern: $DB.query($A + $B, ...)
+      - pattern: $DB.query(`...${$REQ.body.$X}...`, ...)
+      - pattern: $DB.query(`...${$REQ.query.$X}...`, ...)
+      - pattern: $DB.query(`...${$REQ.params.$X}...`, ...)
+      - pattern: $DB.query(`...${$INPUT.$X}...`, ...)
+    paths:
+      include: [src/]
+
+  - id: pizza-error-details-to-client
+    message: >-
+      Interne Fehlerdetails (Stacktrace/Message) gehen an den Client.
+      Nur AppError.publicMessage + requestId ausgeben, Details ins Log.
+    severity: ERROR
+    languages: [typescript, javascript]
+    metadata:
+      cwe: 'CWE-209: Information Exposure Through an Error Message'
+    pattern-either:
+      - pattern: '$RES.json({..., stack: $E.stack, ...})'
+      - pattern: $RES.send($E.stack)
+      - pattern: '$RES.json({..., error: $E.message, ...})'
+      - pattern: $RES.status($S).send($E.message)
+    paths:
+      include: [src/]
+
+  - id: pizza-dom-xss-sink
+    message: >-
+      Daten werden als HTML ins DOM geschrieben -> XSS. textContent/createElement verwenden.
+    severity: ERROR
+    languages: [javascript]
+    metadata:
+      cwe: 'CWE-79: Cross-site Scripting'
+    pattern-either:
+      - pattern: $EL.innerHTML = $X
+      - pattern: $EL.outerHTML = $X
+      - pattern: $EL.insertAdjacentHTML(...)
+      - pattern: document.write(...)
+    paths:
+      include: [public/]
+
+  - id: pizza-weak-randomness-for-tokens
+    message: Math.random() ist nicht kryptographisch sicher. crypto.randomBytes verwenden.
+    severity: ERROR
+    languages: [typescript, javascript]
+    metadata:
+      cwe: 'CWE-338: Use of Cryptographically Weak PRNG'
+    pattern: Math.random()
+    paths:
+      include: [src/]
+
+  - id: pizza-insecure-cookie
+    message: Cookie ohne httpOnly/secure/sameSite gesetzt. sessionCookieOptions() verwenden.
+    severity: WARNING
+    languages: [typescript]
+    patterns:
+      - pattern: $RES.cookie($NAME, $VALUE, {...})
+      - pattern-not: '$RES.cookie($NAME, $VALUE, {..., httpOnly: true, ...})'
+    paths:
+      include: [src/]

@@ -1,0 +1,28 @@
+# gitleaks: Standardregeln + projektspezifische Ergänzungen.
+title = "pizza-shop gitleaks config"
+
+[extend]
+useDefault = true
+
+# Eigene Regel: Klartext-Admin-Passwort in .env-artigen Dateien oder Code
+[[rules]]
+id = "pizza-admin-password"
+description = "ADMIN_PASSWORD / POSTGRES_PASSWORD mit Klartextwert"
+regex = '''(?i)(ADMIN_PASSWORD|POSTGRES_PASSWORD)\s*[=:]\s*['"]?([^\s'"#]{8,})'''
+secretGroup = 2
+keywords = ["admin_password", "postgres_password"]
+
+# Bewusste Ausnahmen (dokumentiert, keine echten Geheimnisse). Bewusst eng gefasst:
+# keine Pfad-Ausnahmen für tests/ – ein echtes Secret in einer Testdatei würde weiterhin gefunden.
+[allowlist]
+description = "Platzhalter und Testwerte"
+regexTarget = "match"
+regexes = [
+  '''change-me-to-a-long-random-value''',  # .env.example
+  '''[=:]\s*['"]test-[a-z0-9-]{4,}$''',   # Testwerte mit Präfix "test-" (in Anführungszeichen)
+  '''\$\{[A-Z_]+''',                      # ${VARIABLE} in docker-compose.yml
+  '''=\s*"\$\(openssl$''',                # ADMIN_PASSWORD="$(openssl rand ...)" in der README
+]
+paths = [
+  '''package-lock\.json''',
+]

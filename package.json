@@ -1,0 +1,57 @@
+{
+  "name": "pizza-shop",
+  "version": "1.0.0",
+  "description": "Pizza-Webshop als Träger für Security-by-Design- und DevSecOps-Maßnahmen",
+  "private": true,
+  "type": "module",
+  "license": "MIT",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json",
+    "start": "node dist/server.js",
+    "dev": "tsx watch src/server.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "test": "vitest run",
+    "test:unit": "vitest run tests/unit",
+    "migrate": "tsx src/db/migrate.ts",
+    "healthcheck": "tsx src/tools/healthcheck.ts",
+    "analyze-logs": "tsx src/tools/analyze-logs.ts",
+    "test:report": "vitest run --reporter=default --reporter=junit --outputFile.junit=test-results/junit.xml && node scripts/junit-summary.mjs test-results/junit.xml > docs/evidence/testing/testbericht.md",
+    "audit": "npm audit --audit-level=high",
+    "sbom": "npm sbom --sbom-format=cyclonedx --omit=dev > sbom.cdx.json",
+    "deps:update": "npm outdated; npm update --save && npm audit --audit-level=high",
+    "demo-branches": "node scripts/create-demo-branches.mjs",
+    "prepare": "husky || true"
+  },
+  "dependencies": {
+    "express": "^5.1.0",
+    "express-rate-limit": "^8.0.0",
+    "helmet": "^8.1.0",
+    "pg": "^8.16.0",
+    "pino": "^10.4.0",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@emnapi/core": "2.0.0-beta.2",
+    "@emnapi/runtime": "2.0.0-beta.2",
+    "@eslint/js": "^10.0.1",
+    "@types/express": "^5.0.3",
+    "@types/node": "^24.0.0",
+    "@types/pg": "^8.15.0",
+    "@types/supertest": "^6.0.3",
+    "eslint": "^10.15.0",
+    "eslint-plugin-security": "^4.2.1",
+    "globals": "^17.14.0",
+    "husky": "^9.1.7",
+    "prettier": "^3.6.0",
+    "supertest": "^7.3.2",
+    "tsx": "^4.20.0",
+    "typescript": "~6.0",
+    "typescript-eslint": "^8.35.0",
+    "vitest": "^5.1.1"
+  }
+}

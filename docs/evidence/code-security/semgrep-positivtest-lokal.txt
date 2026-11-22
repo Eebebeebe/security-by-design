@@ -1,0 +1,20 @@
+Positivtest: Semgrep erkennt absichtlich eingebaute Schwachstellen (lokal, semgrep 1.186.0, 2026-11-22)
+
+Testdatei (temporär, danach gelöscht) mit: SQL per String-Verkettung, Math.random() für Token,
+Cookie ohne httpOnly, err.message/err.stack an den Client.
+
+$ semgrep scan --metrics=off --config p/nodejsscan --config p/secrets --config .semgrep/project-rules.yml \
+    --severity ERROR --severity WARNING src/__vuln_demo.ts
+ERROR   pizza-sql-string-concat              line 4
+WARNING node_insecure_random_generator       line 5
+ERROR   pizza-weak-randomness-for-tokens     line 5
+WARNING pizza-insecure-cookie                line 6
+ERROR   pizza-error-details-to-client        line 7
+
+Scan des echten Codes (main): 0 blockierende Befunde.
+  - 3x INFO "helmet_*" (Bestätigung, dass Security-Header gesetzt sind) -> blockieren nicht
+  - 1x False Positive regex_dos in src/middleware/requestLogger.ts -> begründet per nosemgrep markiert
+
+ESLint-Positivtest (Frontend-XSS):
+$ echo "document.body.innerHTML = location.hash;" > public/__xss.js && npx eslint public/__xss.js
+  2:1  error  'innerHTML' is restricted from being used. XSS-Gefahr: textContent/createElement verwenden

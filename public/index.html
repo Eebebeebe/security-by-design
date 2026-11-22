@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="de">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Pizzeria Sicher</title>
+    <link rel="stylesheet" href="/styles.css" />
+    <script src="/shop.js" defer></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <div class="brand">🍕 Pizzeria <strong>Sicher</strong></div>
+      <nav>
+        <a href="#menu">Speisekarte</a>
+        <a href="#track">Bestellstatus</a>
+        <a href="/admin.html" class="muted">Admin</a>
+      </nav>
+    </header>
+
+    <main class="layout">
+      <section id="menu" class="menu">
+        <div class="menu-head">
+          <h1>Speisekarte</h1>
+          <div class="filters">
+            <input
+              id="search"
+              type="search"
+              maxlength="50"
+              placeholder="Suchen …"
+              aria-label="Produkte suchen"
+            />
+            <div class="chips" role="group" aria-label="Kategorie">
+              <button class="chip active" data-category="">Alle</button>
+              <button class="chip" data-category="pizza">Pizza</button>
+              <button class="chip" data-category="drink">Getränke</button>
+              <button class="chip" data-category="dessert">Desserts</button>
+            </div>
+          </div>
+        </div>
+        <div id="products" class="grid" aria-live="polite"></div>
+      </section>
+
+      <aside class="cart" aria-label="Warenkorb">
+        <h2>Warenkorb</h2>
+        <ul id="cart-items" class="cart-items"></ul>
+        <p class="total">Summe: <strong id="cart-total">0,00 €</strong></p>
+
+        <form id="checkout" class="form" novalidate>
+          <h3>Lieferadresse</h3>
+          <label
+            >Name <input name="name" required minlength="2" maxlength="80" autocomplete="name"
+          /></label>
+          <label
+            >Straße + Nr.
+            <input
+              name="street"
+              required
+              minlength="3"
+              maxlength="120"
+              autocomplete="street-address"
+          /></label>
+          <div class="row">
+            <label
+              >PLZ
+              <input
+                name="zip"
+                required
+                pattern="\d{5}"
+                maxlength="5"
+                inputmode="numeric"
+                autocomplete="postal-code"
+            /></label>
+            <label
+              >Ort
+              <input
+                name="city"
+                required
+                minlength="2"
+                maxlength="80"
+                autocomplete="address-level2"
+            /></label>
+          </div>
+          <label
+            >Telefon
+            <input
+              name="phone"
+              required
+              pattern="\+?[0-9 ]{6,20}"
+              maxlength="20"
+              autocomplete="tel"
+          /></label>
+          <button type="submit" class="primary" id="order-btn" disabled>Jetzt bestellen</button>
+          <p id="checkout-msg" class="msg" role="status"></p>
+        </form>
+      </aside>
+    </main>
+
+    <section id="track" class="track">
+      <h2>Bestellstatus abfragen</h2>
+      <p class="muted">Bestellnummer und Code erhältst du nach der Bestellung.</p>
+      <form id="track-form" class="form inline" novalidate>
+        <input
+          name="orderId"
+          placeholder="Bestellnummer"
+          required
+          maxlength="36"
+          aria-label="Bestellnummer"
+        />
+        <input name="token" placeholder="Code" required maxlength="43" aria-label="Tracking-Code" />
+        <button type="submit">Abfragen</button>
+      </form>
+      <div id="track-result" class="track-result" role="status"></div>
+    </section>
+
+    <footer class="footer">
+      Demo-Anwendung für Security by Design · keine echten Bestellungen
+    </footer>
+  </body>
+</html>
