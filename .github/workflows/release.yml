@@ -1,0 +1,142 @@
+# Release: Jeder Merge/Push auf main
+#   1. durchläuft alle CI- und Security-Gates (wiederverwendete Workflows)
+#   2. baut das Docker-Image, scannt es (Trivy) und veröffentlicht es erst DANN in GHCR
+#   3. erzeugt eine SBOM (CycloneDX) und hängt SBOM + Scan-Report an ein GitHub-Release
+name: Release
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  ci:
+    uses: ./.github/workflows/ci.yml
+  security:
+    uses: ./.github/workflows/security.yml
+    permissions:
+      contents: read
+      security-events: write
+
+  publish:
+    name: Build, Scan & Publish
+    needs: [ci, security]
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    permissions:
+      contents: write # GitHub-Release anlegen
+      packages: write # Image nach ghcr.io pushen
+    env:
+      REGISTRY: ghcr.io
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Version bestimmen
+        id: version
+        run: |
+          pkg=$(node -p "require('./package.json').version")
+          echo "version=${pkg}" >> "$GITHUB_OUTPUT"
+          echo "tag=v${pkg}-build.${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - uses: docker/login-action@8aa5831fb8d48d8f76594c7ddde61ae58019f550 # v4.8.0
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - id: meta
+        uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
+        with:
+          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/pizza-shop
+          tags: |
+            type=sha,format=long
+            type=raw,value=${{ steps.version.outputs.tag }}
+            type=raw,value=latest
+
+      - name: Image bauen (noch nicht veröffentlichen)
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          load: true
+          tags: pizza-shop:candidate
+          build-args: VERSION=${{ steps.version.outputs.tag }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Trivy-Gate – nur saubere Images werden veröffentlicht
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
+        with:
+          image-ref: pizza-shop:candidate
+          scanners: vuln,secret,misconfig
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+          format: table
+          output: trivy-report.txt
+
+      - name: Image veröffentlichen (GHCR) inkl. Provenance-Attestation
+        id: push
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: VERSION=${{ steps.version.outputs.tag }}
+          cache-from: type=gha
+          provenance: mode=max
+          sbom: true
+
+      - name: SBOM erzeugen (CycloneDX, aus dem veröffentlichten Image)
+        uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
+        with:
+          image: ${{ env.REGISTRY }}/${{ github.repository_owner }}/pizza-shop@${{ steps.push.outputs.digest }}
+          format: cyclonedx-json
+          output-file: sbom.cdx.json
+          upload-artifact: true
+          upload-release-assets: false
+
+      - name: Release-Notizen
+        env:
+          IMAGE: ${{ env.REGISTRY }}/${{ github.repository_owner }}/pizza-shop
+          DIGEST: ${{ steps.push.outputs.digest }}
+          TAG: ${{ steps.version.outputs.tag }}
+        run: |
+          image_lc=$(echo "$IMAGE" | tr '[:upper:]' '[:lower:]')
+          {
+            echo "## Docker-Image"
+            echo
+            echo '```bash'
+            echo "docker pull ${image_lc}:${TAG}"
+            echo "# exakt (unveränderlich):"
+            echo "docker pull ${image_lc}@${DIGEST}"
+            echo '```'
+            echo
+            echo "Commit: \`${GITHUB_SHA}\`  "
+            echo "Digest: \`${DIGEST}\`"
+            echo
+            echo "Anhänge: \`sbom.cdx.json\` (CycloneDX-SBOM), \`trivy-report.txt\` (Image-Scan)."
+            echo "Installation: siehe README → Installation."
+          } > release-notes.md
+          cat release-notes.md >> "$GITHUB_STEP_SUMMARY"
+
+      - name: GitHub-Release anlegen
+        uses: softprops/action-gh-release@8a0cd651e5b2365bd640854a3fa5dfc70e4875f3 # v3.0.4
+        with:
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: ${{ steps.version.outputs.tag }}
+          body_path: release-notes.md
+          files: |
+            sbom.cdx.json
+            trivy-report.txt

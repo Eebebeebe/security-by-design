@@ -1,0 +1,61 @@
+# Startet Shop + Postgres.  Voraussetzung: .env (Vorlage: .env.example)
+#   docker compose up -d              -> nutzt das veröffentlichte Image aus GHCR (APP_IMAGE)
+#   docker compose up -d --build      -> baut das Image lokal aus dem Quellcode
+name: pizza-shop
+
+services:
+  db:
+    # Release-Tag + Digest gepinnt
+    image: postgres:17.12-alpine@sha256:f9cf3e1f0066f0eb0c48707d864f0ac5941e9ff454a072077d97a4d278d07d73
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER fehlt in .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD fehlt in .env}
+      POSTGRES_DB: ${POSTGRES_DB:-pizza}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    # Kein Port nach außen: Die Datenbank ist nur im internen Netz für die App erreichbar.
+    networks: [backend]
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"']
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  app:
+    image: ${APP_IMAGE:-ghcr.io/change-me/pizza-shop:latest}
+    build: .
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB:-pizza}
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?ADMIN_PASSWORD fehlt in .env}
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      LOG_FILE: /var/log/pizza/app.log
+      HEARTBEAT_INTERVAL_MS: ${HEARTBEAT_INTERVAL_MS:-30000}
+    ports:
+      - '127.0.0.1:${PORT:-3000}:3000' # nur lokal; öffentlich nur hinter TLS-Reverse-Proxy
+    volumes:
+      - app-logs:/var/log/pizza
+    networks: [backend]
+    # Härtung des Containers
+    read_only: true
+    tmpfs: [/tmp]
+    cap_drop: [ALL]
+    security_opt: ['no-new-privileges:true']
+    pids_limit: 200
+    mem_limit: 512m
+    logging:
+      driver: json-file
+      options: { max-size: '10m', max-file: '5' }
+
+volumes:
+  db-data:
+  app-logs:
+
+networks:
+  backend:

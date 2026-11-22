@@ -1,0 +1,77 @@
+# SAST + Secret Scanning bei jedem Push/PR und wöchentlich (neue Regeln finden auch alten Code).
+name: Security
+
+on:
+  push:
+    branches-ignore: [main] # main: via release.yml
+  pull_request:
+  schedule:
+    - cron: '23 4 * * 1' # montags 04:23 UTC
+  workflow_dispatch:
+  workflow_call:
+
+permissions:
+  contents: read
+
+jobs:
+  semgrep:
+    name: SAST (Semgrep)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    container:
+      # Release-Tag + Digest gepinnt
+      image: semgrep/semgrep:1.186.0@sha256:6e1b04340e60e910fbb4ddbf3c857ab0918f064417ad5ac530014ccb3cf8c8f1
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Semgrep (Registry-Regeln + projektspezifische Regeln)
+        # --error: Job schlägt fehl, sobald ein Befund mit WARNING/ERROR existiert.
+        # INFO-Befunde (z.B. "Helmet ist korrekt gesetzt") blockieren nicht.
+        run: >-
+          semgrep scan --metrics=off
+          --config p/javascript --config p/typescript --config p/nodejsscan
+          --config p/expressjs --config p/secrets
+          --config .semgrep/project-rules.yml
+          --exclude node_modules --exclude docs
+          --severity ERROR --severity WARNING
+          --sarif-output=semgrep.sarif --text --error
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: always()
+        with:
+          name: semgrep-sarif
+          path: semgrep.sarif
+          retention-days: 30
+
+  codeql:
+    name: SAST (CodeQL, Datenfluss-Analyse)
+    # Code Scanning ist für private Repos nur mit GitHub Advanced Security verfügbar.
+    if: ${{ !github.event.repository.private }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    permissions:
+      contents: read
+      security-events: write # Ergebnisse im Security-Tab ablegen
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: github/codeql-action/init@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea # v4.39.4
+        with:
+          languages: javascript-typescript
+          queries: security-extended
+      - uses: github/codeql-action/analyze@1bd86f2fdb4b86187fa4059f16f31a3202acc9ea # v4.39.4
+
+  gitleaks:
+    name: Secret Scanning (gitleaks, gesamte Historie)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # komplette Historie: auch "gelöschte" Secrets in alten Commits finden
+          persist-credentials: false
+      - uses: gitleaks/gitleaks-action@e0c47f4f8be36e29cdc102c57e68cb5cbf0e8d1e # v3.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_CONFIG: .gitleaks.toml

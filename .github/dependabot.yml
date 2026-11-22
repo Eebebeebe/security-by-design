@@ -1,0 +1,33 @@
+# Automatische Abhängigkeits-Updates (Build & Supply Chain, Kriterium 4).
+# Dependabot öffnet PRs; diese durchlaufen alle CI-/Security-Gates, bevor sie gemerged werden.
+# On-demand: GitHub -> Insights -> Dependency graph -> Dependabot -> "Check for updates".
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule: { interval: weekly, day: monday }
+    open-pull-requests-limit: 10
+    groups:
+      # Dev-Tools gesammelt in einem PR, Laufzeit-Abhängigkeiten einzeln (höheres Risiko -> einzeln prüfen)
+      dev-dependencies:
+        dependency-type: development
+        update-types: [minor, patch]
+    labels: [dependencies]
+
+  - package-ecosystem: docker # Basis-Image im Dockerfile (Tag + Digest)
+    directory: /
+    schedule: { interval: weekly }
+    labels: [dependencies]
+
+  - package-ecosystem: docker-compose # Postgres-Image in docker-compose.yml
+    directory: /
+    schedule: { interval: weekly }
+    labels: [dependencies]
+
+  - package-ecosystem: github-actions # gepinnte Action-SHAs
+    directory: /
+    schedule: { interval: weekly }
+    groups:
+      actions:
+        patterns: ['*']
+    labels: [dependencies]
