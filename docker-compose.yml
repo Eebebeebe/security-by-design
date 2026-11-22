@@ -23,7 +23,7 @@ services:
       retries: 10
 
   app:
-    image: ${APP_IMAGE:-ghcr.io/change-me/pizza-shop:latest}
+    image: ${APP_IMAGE:-ghcr.io/eebebeebe/pizza-shop:latest}
     build: .
     restart: unless-stopped
     depends_on:
