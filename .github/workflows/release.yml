@@ -41,12 +41,16 @@ jobs:
         with:
           persist-credentials: false
 
-      - name: Version bestimmen
+      - name: Version und Image-Namen bestimmen
         id: version
+        env:
+          OWNER: ${{ github.repository_owner }}
         run: |
           pkg=$(node -p "require('./package.json').version")
           echo "version=${pkg}" >> "$GITHUB_OUTPUT"
           echo "tag=v${pkg}-build.${GITHUB_RUN_NUMBER}" >> "$GITHUB_OUTPUT"
+          # Image-Referenzen müssen klein geschrieben sein (Owner "Eebebeebe" -> "eebebeebe").
+          echo "image=${REGISTRY}/$(echo "$OWNER" | tr '[:upper:]' '[:lower:]')/pizza-shop" >> "$GITHUB_OUTPUT"
 
       - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
 
@@ -59,7 +63,7 @@ jobs:
       - id: meta
         uses: docker/metadata-action@dc802804100637a589fabce1cb79ff13a1411302 # v6.2.0
         with:
-          images: ${{ env.REGISTRY }}/${{ github.repository_owner }}/pizza-shop
+          images: ${{ steps.version.outputs.image }}
           tags: |
             type=sha,format=long
             type=raw,value=${{ steps.version.outputs.tag }}
@@ -102,7 +106,10 @@ jobs:
       - name: SBOM erzeugen (CycloneDX, aus dem veröffentlichten Image)
         uses: anchore/sbom-action@66cbf4bc1f1c0d2edc94016e65bc221b6bb0ad6c # v0.24.3
         with:
-          image: ${{ env.REGISTRY }}/${{ github.repository_owner }}/pizza-shop@${{ steps.push.outputs.digest }}
+          image: ${{ steps.version.outputs.image }}@${{ steps.push.outputs.digest }}
+          # Package ist privat -> Syft braucht Lesezugriff auf die Registry
+          registry-username: ${{ github.actor }}
+          registry-password: ${{ secrets.GITHUB_TOKEN }}
           format: cyclonedx-json
           output-file: sbom.cdx.json
           upload-artifact: true
@@ -110,11 +117,11 @@ jobs:
 
       - name: Release-Notizen
         env:
-          IMAGE: ${{ env.REGISTRY }}/${{ github.repository_owner }}/pizza-shop
+          IMAGE: ${{ steps.version.outputs.image }}
           DIGEST: ${{ steps.push.outputs.digest }}
           TAG: ${{ steps.version.outputs.tag }}
         run: |
-          image_lc=$(echo "$IMAGE" | tr '[:upper:]' '[:lower:]')
+          image_lc="$IMAGE"
           {
             echo "## Docker-Image"
             echo

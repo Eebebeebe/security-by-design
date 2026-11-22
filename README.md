@@ -48,11 +48,11 @@ Jeder Merge auf `main` veröffentlicht automatisch ein geprüftes Image nach Git
 Voraussetzung: Docker mit Compose v2.
 
 ```bash
-git clone https://github.com/<OWNER>/<REPO>.git && cd <REPO>
+git clone https://github.com/Eebebeebe/security-by-design.git && cd security-by-design
 cp .env.example .env
 # .env bearbeiten: POSTGRES_PASSWORD und ADMIN_PASSWORD (min. 12 Zeichen) setzen
 #   z.B.  openssl rand -base64 24
-echo "APP_IMAGE=ghcr.io/<owner>/pizza-shop:latest" >> .env
+echo "APP_IMAGE=ghcr.io/eebebeebe/pizza-shop:latest" >> .env
 docker compose up -d
 ./scripts/healthcheck.sh          # -> HEALTHY
 ```
@@ -60,7 +60,7 @@ docker compose up -d
 Shop: <http://localhost:3000> · Admin: <http://localhost:3000/admin.html>
 
 > Ohne gültiges `ADMIN_PASSWORD` startet der Container absichtlich **nicht** (Exit-Code 78, Log-Event `app.config.invalid`).
-> Für einen exakt reproduzierbaren Stand statt `latest` den Digest aus den Release-Notizen verwenden: `ghcr.io/<owner>/pizza-shop@sha256:…`
+> Für einen exakt reproduzierbaren Stand statt `latest` den Digest aus den Release-Notizen verwenden: `ghcr.io/eebebeebe/pizza-shop@sha256:…`
 
 ### Variante B: Selbst bauen
 

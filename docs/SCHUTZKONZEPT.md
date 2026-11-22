@@ -26,7 +26,7 @@ Ein Pizza-Webshop: Kunden bestellen ohne Konto, erhalten einen geheimen Tracking
 |---|---|---|
 | 1.1 Build/Packaging dokumentiert | README → *Installation* (Varianten A–C) | [README.md](../README.md#installation) |
 | 1.2 Build-Skript | `scripts/build.sh`: `npm ci` → Lint → Typcheck → Unit-Tests → `npm audit` → `docker build`, Tag = Git-SHA | [scripts/build.sh](../scripts/build.sh) |
-| Zusätzlich: Auto-Publish | Merge auf `main` → [`release.yml`](../.github/workflows/release.yml) baut, scannt und pusht `ghcr.io/<owner>/pizza-shop:{sha,vX-build.N,latest}` + GitHub-Release; per `docker compose up` direkt installierbar | Actions → *Release*; Packages; Releases |
+| Zusätzlich: Auto-Publish | Merge auf `main` → [`release.yml`](../.github/workflows/release.yml) baut, scannt und pusht `ghcr.io/eebebeebe/pizza-shop:{sha,vX-build.N,latest}` + GitHub-Release; per `docker compose up` direkt installierbar | Actions → *Release*; Packages; Releases |
 
 Artefakt: Multi-Stage-[Dockerfile](../Dockerfile) – Build-Stage mit Dev-Tools, Runtime-Stage nur mit `dist/`, Prod-Abhängigkeiten und Migrationen; läuft als `node` (non-root), Dateien gehören `root`, npm/npx entfernt, `HEALTHCHECK` eingebaut.
 
