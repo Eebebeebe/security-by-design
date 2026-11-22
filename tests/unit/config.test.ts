@@ -1,10 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import { ConfigError, loadConfig } from '../../src/config.js';
 
+// Testwerte mit Präfix "test-" -> von der gitleaks-Allowlist als Platzhalter erkannt.
 const base = {
   DATABASE_URL: 'postgres://u:p@localhost/db',
-  ADMIN_PASSWORD: 'a-very-long-password',
+  ADMIN_PASSWORD: 'test-very-long-password',
 };
+const withPassword = (pw: string) => ({ ...base, ADMIN_PASSWORD: pw });
 
 describe('Konfiguration (Fail Fast beim Start)', () => {
   it('sichere Defaults: production, Secure-Cookies, kein Proxy-Trust', () => {
@@ -19,8 +21,9 @@ describe('Konfiguration (Fail Fast beim Start)', () => {
   });
 
   it('verweigert zu kurze / triviale Passwörter', () => {
-    expect(() => loadConfig({ ...base, ADMIN_PASSWORD: 'short' })).toThrow(/mindestens 12/);
-    expect(() => loadConfig({ ...base, ADMIN_PASSWORD: '123456789012' })).toThrow(/zu schwach/);
+    expect(() => loadConfig(withPassword('short'))).toThrow(/mindestens 12/);
+    // lang genug, steht aber auf der Liste trivialer Passwörter in src/config.ts
+    expect(() => loadConfig(withPassword('123456789012'))).toThrow(/zu schwach/);
   });
 
   it('verweigert ungültige Werte', () => {
@@ -31,7 +34,7 @@ describe('Konfiguration (Fail Fast beim Start)', () => {
 
   it('gibt in der Fehlermeldung niemals den geheimen Wert aus', () => {
     try {
-      loadConfig({ ...base, ADMIN_PASSWORD: 'geheim' });
+      loadConfig(withPassword('geheim'));
       expect.unreachable();
     } catch (err) {
       expect(String(err)).not.toContain('geheim');

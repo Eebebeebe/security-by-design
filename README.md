@@ -80,7 +80,7 @@ Benötigt Node.js 24 (`.nvmrc`) und eine PostgreSQL-Instanz.
 npm ci
 docker compose up -d db           # oder eigene Postgres; Port dann in docker-compose freigeben
 export DATABASE_URL=postgres://pizza:<pw>@localhost:5432/pizza
-export ADMIN_PASSWORD='<min-12-zeichen>' COOKIE_SECURE=true NODE_ENV=development
+export ADMIN_PASSWORD="$(openssl rand -base64 24)" COOKIE_SECURE=true NODE_ENV=development
 npm run dev                       # http://localhost:3000, Migrationen laufen automatisch
 ```
 

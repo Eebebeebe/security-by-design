@@ -1,0 +1,7 @@
+# Geprüfte False Positives in bereits veröffentlichten Commits (Historie wird nicht umgeschrieben).
+# Format: <commit>:<datei>:<regel>:<zeile>
+# Commit 9bf4230: Test-Fixtures bzw. README-Platzhalter, keine echten Geheimnisse.
+# Seit Commit "fix(ci): gitleaks ..." sind die Stellen umgestellt und fallen unter die Allowlist.
+9bf4230b58911d3158f3c769a4a5951033dd3587:tests/unit/config.test.ts:pizza-admin-password:6
+9bf4230b58911d3158f3c769a4a5951033dd3587:tests/unit/config.test.ts:pizza-admin-password:23
+9bf4230b58911d3158f3c769a4a5951033dd3587:README.md:pizza-admin-password:83

@@ -24,6 +24,7 @@ jobs:
     permissions:
       contents: read
       security-events: write
+      pull-requests: read # Obergrenze für den gitleaks-Job im aufgerufenen Workflow
 
   publish:
     name: Build, Scan & Publish
