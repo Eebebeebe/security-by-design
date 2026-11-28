@@ -59,7 +59,7 @@ Positivtests: `failfast.test.ts` (*Sichere Fehlerbehandlung*, *Sichere Defaults*
 |---|---|---|---|
 | **ESLint** + `eslint-plugin-security` + `typescript-eslint strict-type-checked` | eval, unsichere RegExp/FS-Zugriffe, unsichere `any`-Flüsse; im Frontend `innerHTML`/`insertAdjacentHTML` | pre-commit, CI | [`eslint.config.js`](../eslint.config.js) |
 | **Semgrep** (p/javascript, p/typescript, p/nodejsscan, p/expressjs, p/secrets + 5 eigene Regeln) | Injection, XSS-Senken, schwache Zufallszahlen, unsichere Cookies, Fehlerdetails an Client | CI bei Push/PR + wöchentlich; blockiert ab WARNING | [`security.yml`](../.github/workflows/security.yml), [`.semgrep/project-rules.yml`](../.semgrep/project-rules.yml) |
-| **CodeQL** (security-extended) | Taint-/Datenfluss-Analyse über Funktionsgrenzen | CI (öffentliche Repos) | [`security.yml`](../.github/workflows/security.yml) |
+| **CodeQL** (security-extended) | Taint-/Datenfluss-Analyse über Funktionsgrenzen; analysiert ausgelieferten Code (`src/`, `public/`), nicht `tests/` | CI (öffentliche Repos) | [`security.yml`](../.github/workflows/security.yml), [`.github/codeql/codeql-config.yml`](../.github/codeql/codeql-config.yml) |
 | **gitleaks** (Default-Regeln + eigene Regel für Admin/DB-Passwörter) | Secrets im Code und in der **gesamten Git-Historie** | pre-commit (lokal), CI | [`.gitleaks.toml`](../.gitleaks.toml), [`.husky/pre-commit`](../.husky/pre-commit) |
 | **Trivy** (secret + misconfig im Image) | Secrets/Fehlkonfiguration im fertigen Image | CI, Release | [`ci.yml`](../.github/workflows/ci.yml) |
 
@@ -75,6 +75,8 @@ Positivtests: `failfast.test.ts` (*Sichere Fehlerbehandlung*, *Sichere Defaults*
 Lokale Reproduktion/Ergebnisse: [`evidence/code-security/semgrep-positivtest-lokal.txt`](evidence/code-security/semgrep-positivtest-lokal.txt).
 
 **Umgang mit False Positives:** INFO-Befunde blockieren nicht (es sind Bestätigungen wie „Helmet gesetzt“). Ein echter False Positive (ReDoS-Warnung an einer linearen Regex) ist im Code per `nosemgrep` **mit Begründung** markiert; ESLint-Ausnahmen ebenso (`-- Begründung`). Ausnahmen sind damit reviewbar statt global abgeschaltet.
+
+*Beispiel CodeQL:* Nach Einführung der Unit-Tests meldete CodeQL `js/insufficient-password-hash` (High) an `sha256Hex` in [`src/services/crypto.ts`](../src/services/crypto.ts). Analyse des Datenflusses: Quelle war ausschließlich der Test [`authService.test.ts`](../tests/unit/authService.test.ts), der das Session-Token aus `login()` hasht, um zu prüfen, dass nur der Hash gespeichert wird. CodeQL hält das Login-Ergebnis per Namensheuristik für ein Passwort; tatsächlich ist es ein 256-Bit-Zufallstoken, für das SHA-256 angemessen ist (ein langsamer Hash schützt nur leicht erratbare Eingaben wie Passwörter). Echte Passwörter werden mit scrypt gehasht. Maßnahme: CodeQL analysiert nur ausgelieferten Code, `tests/` ist mit Begründung in der [CodeQL-Konfiguration](../.github/codeql/codeql-config.yml) ausgenommen; Semgrep und ESLint prüfen Tests weiterhin.
 
 ### Vertiefung: mitigierte Risiken / Restrisiken
 | Mitigiert | Restrisiko / nächste Schritte |
