@@ -26,6 +26,8 @@ export const REDACT_PATHS = [
 export interface LoggerOptions {
   level: string;
   file?: string | undefined;
+  /** Nur für Tests: Logs in diesen Stream statt nach STDOUT schreiben. */
+  destination?: pino.DestinationStream | undefined;
 }
 
 export function createLogger(opts: LoggerOptions): Logger {
@@ -39,6 +41,9 @@ export function createLogger(opts: LoggerOptions): Logger {
       level: (label: string, number: number) => ({ level: label, levelValue: number }),
     },
   };
+  if (opts.destination) {
+    return pino(base, opts.destination);
+  }
   if (!opts.file) {
     return pino(base);
   }

@@ -10,7 +10,8 @@
 | 4 Logging & Betrieb | [logging/demo-db-outage.log](logging/demo-db-outage.log) | echtes JSON-Log (Bestellung, Admin, DB-Ausfall) |
 | 4 Logging & Betrieb | [logging/demo-db-outage-analyse.md](logging/demo-db-outage-analyse.md) | Auswertung: Verfügbarkeit 71,43 %, Error-Events |
 | 4 Logging & Betrieb | [logging/healthcheck-unhealthy.txt](logging/healthcheck-unhealthy.txt) | Health-Check-Skript erkennt DB-Ausfall |
-| 5 Testing | [testing/testbericht.md](testing/testbericht.md) | lesbarer Testbericht (61/61) |
+| 5 Testing | [testing/testbericht.md](testing/testbericht.md) | lesbarer Testbericht (175/175) |
+| 5 Testing | [testing/mutationsprobe-lokal.txt](testing/mutationsprobe-lokal.txt) | eingebaute Sicherheitsfehler werden von Unit-Tests erkannt |
 | 5 Testing | [testing/positivtest-broken-stock-lokal.txt](testing/positivtest-broken-stock-lokal.txt) | Tests scheitern bei fehlerhafter Änderung |
 
 Aktualisieren: `npm run test:report` (Testbericht), `npm run analyze-logs -- <log> > logging/….md` (Log-Auswertung), `npm run demo-branches` + Push (CI-Positivtests).

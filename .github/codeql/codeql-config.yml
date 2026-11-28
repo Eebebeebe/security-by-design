@@ -1,0 +1,16 @@
+# CodeQL-Konfiguration (wird in .github/workflows/security.yml eingebunden).
+name: pizza-shop CodeQL
+
+queries:
+  - uses: security-extended
+
+# Analysiert wird nur Code, der ausgeliefert wird (src/, public/).
+# tests/ ist ausgenommen: Testcode läuft nie produktiv und erzeugt durch seine Prüfungen
+# Fehlalarme. Beispiel: authService.test.ts hasht das Session-Token aus login() mit SHA-256,
+# um zu prüfen, dass nur der Hash gespeichert wird. CodeQL hält das Login-Ergebnis per
+# Heuristik für ein Passwort (js/insufficient-password-hash). Es ist aber ein 256-Bit-
+# Zufallstoken, für das SHA-256 angemessen ist. Echte Passwörter hasht src/services/crypto.ts
+# mit scrypt. Tests werden weiterhin von Semgrep und ESLint geprüft.
+paths-ignore:
+  - tests
+  - '**/*.test.ts'
