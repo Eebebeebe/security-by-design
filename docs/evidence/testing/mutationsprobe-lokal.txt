@@ -1,0 +1,15 @@
+Mutationsprobe: Erkennen die Unit-Tests absichtlich eingebaute Sicherheitsfehler? (lokal, 2026-11-28)
+
+Vorgehen: Je eine Code-Stelle wird verfälscht, `npx vitest run tests/unit` ausgeführt, danach der
+Originalstand wiederhergestellt. Ausgangslage: 150/150 Unit-Tests grün.
+
+| Eingebauter Fehler                                   | Datei                              | Ergebnis              |
+|------------------------------------------------------|------------------------------------|-----------------------|
+| CSRF: Origin-Vergleich entfernt                      | src/middleware/auth.ts             | 4 Tests rot           |
+| LIKE-Escaping entfernt (Wildcard-Injection)          | src/services/productService.ts     | 1 Test rot            |
+| Storno nach Lieferung erlaubt (Zustandsautomat)      | src/services/orderService.ts       | 1 Test rot            |
+| Client-/Fixpreis statt DB-Preis                      | src/services/orderService.ts       | 1 Test rot            |
+| Session-Token im Klartext statt als Hash gespeichert | src/services/authService.ts        | 1 Test rot            |
+
+Alle 5 Mutationen wurden erkannt. Die Tests prüfen also das sicherheitsrelevante Verhalten,
+nicht nur, dass der Code ohne Fehler durchläuft.
